@@ -1,0 +1,4 @@
+*.restore
+*.broken-backup
+__pycache__/
+*.pyc

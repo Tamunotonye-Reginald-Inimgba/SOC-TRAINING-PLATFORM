@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attack Scenario Launcher</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #1e1e2f; color: #eee; padding: 20px; }
+        h1 { text-align: center; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .card { background: #2a2a40; border-radius: 10px; padding: 20px; }
+        .card h2 { margin-top: 0; font-size: 18px; }
+        .card p { font-size: 14px; color: #ccc; }
+        button { background: #4a90e2; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        .output { margin-top: 10px; background: #111; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>Attack Scenario Launcher</h1>
+    <div class="grid">
+        {% for key, s in scenarios.items() %}
+        <div class="card">
+            <h2>{{ s.name }}</h2>
+            <p>{{ s.description }}</p>
+            <button onclick="runScenario('{{ key }}', this)">Run This Scenario</button>
+            <div class="output" id="output-{{ key }}" style="display:none;"></div>
+        </div>
+        {% endfor %}
+    </div>
+
+<script>
+function runScenario(key, btn) {
+    btn.disabled = true;
+    btn.innerText = "Running...";
+    const outputDiv = document.getElementById("output-" + key);
+    outputDiv.style.display = "block";
+    outputDiv.innerText = "Starting...";
+
+    fetch("/run/" + key, { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+            const id = data.id;
+            const poll = setInterval(() => {
+                fetch("/result/" + id)
+                    .then(res => res.json())
+                    .then(r => {
+                        if (r.status === "done") {
+                            clearInterval(poll);
+                            outputDiv.innerText = r.output || "(no output)";
+                            btn.disabled = false;
+                            btn.innerText = "Run This Scenario";
+                        } else {
+                            outputDiv.innerText = "Running... please wait.";
+                        }
+                    });
+            }, 5000);
+        });
+}
+</script>
+</body>
+</html>
